@@ -4,8 +4,12 @@ WORKDIR /app
 
 COPY . .
 
-RUN apt-get update && apt-get install -y unzip git zip libicu-dev libzip-dev libpq-dev \
-    && docker-php-ext-install intl pdo pdo_pgsql zip mbstring
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    unzip git zip libicu-dev libzip-dev libpq-dev libonig-dev \
+    && docker-php-ext-configure intl \
+    && docker-php-ext-install -j$(nproc) intl pdo pdo_pgsql zip mbstring \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
 
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 

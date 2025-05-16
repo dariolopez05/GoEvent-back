@@ -12,12 +12,6 @@ RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
     && curl -1sLf 'https://dl.cloudsmith.io/public/symfony/stable/setup.deb.sh' | bash \
     && apt-get -y install symfony-cli
 
-# Cambiar puerto de escucha Apache según variable PORT de Railway, default 80
-ARG PORT=80
-
-RUN sed -i "s/Listen 80/Listen ${PORT}/" /etc/apache2/ports.conf \
-    && sed -i "s/<VirtualHost \*:80>/<VirtualHost *:${PORT}>/" /etc/apache2/sites-available/000-default.conf
-
 # Evitar warning de ServerName
 RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
@@ -29,6 +23,9 @@ RUN mkdir -p var vendor public \
 
 RUN a2enmod rewrite
 
-EXPOSE ${PORT}
+EXPOSE 8080
 
-CMD ["apache2-foreground"]
+# Script para cambiar el puerto en runtime y luego iniciar Apache
+CMD bash -c "sed -i 's/Listen 80/Listen ${PORT:-8080}/' /etc/apache2/ports.conf && \
+    sed -i 's/<VirtualHost \\*:80>/<VirtualHost *:${PORT:-8080}>/' /etc/apache2/sites-available/000-default.conf && \
+    apache2-foreground"

@@ -9,14 +9,10 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# Copiamos solo composer.json y composer.lock primero para cachear deps
 COPY composer.json composer.lock ./
 
-# Instalamos dependencias con composer con más verbosidad para debug
-RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --verbose
 
-
-# Ahora copiamos el resto del código
 COPY . .
 
 COPY docker/nginx.conf.template /etc/nginx/nginx.conf.template

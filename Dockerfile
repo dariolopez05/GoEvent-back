@@ -18,7 +18,7 @@ COPY . /var/www/html
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+RUN composer install --no-dev --optimize-autoloader --no-interaction -vvv
 
 RUN chown -R www-data:www-data /var/www/html/var /var/www/html/vendor
 

@@ -30,3 +30,11 @@ COPY start.sh /start.sh
 RUN chmod +x /start.sh
 
 CMD ["/start.sh"]
+
+RUN sed -i 's|DocumentRoot /var/www/html|DocumentRoot /var/www/html/public|g' /etc/apache2/sites-available/000-default.conf
+
+# Activa reescritura (Symfony la necesita)
+RUN a2enmod rewrite
+
+# Configura AllowOverride para .htaccess de Symfony
+RUN sed -i '/<Directory \/var\/www\/>/,/<\/Directory>/ s/AllowOverride None/AllowOverride All/' /etc/apache2/apache2.conf

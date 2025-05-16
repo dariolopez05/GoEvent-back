@@ -14,10 +14,12 @@ COPY . .
 
 RUN rm -rf var/cache/*
 
-RUN composer install --no-dev --optimize-autoloader --no-interaction -vvv
+# Ejecutamos composer, pero NO fallamos el build para poder entrar luego
+RUN composer install --no-dev --optimize-autoloader --no-interaction -vvv || true
 
-RUN php bin/console cache:clear --env=prod --no-warmup
-RUN php bin/console cache:warmup --env=prod
+# No falla el build aunque composer falle; limpiar cache y preparar entorno
+RUN php bin/console cache:clear --env=prod --no-warmup || true
+RUN php bin/console cache:warmup --env=prod || true
 
 EXPOSE 8000
 

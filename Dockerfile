@@ -19,6 +19,10 @@ RUN a2enmod rewrite
 # Establecer un ServerName genérico
 RUN echo 'ServerName localhost' >> /etc/apache2/apache2.conf
 
+# Asegurar que el puerto de Apache esté configurado correctamente
+RUN sed -i 's/Listen 80/Listen ${PORT}/' /etc/apache2/ports.conf
+RUN sed -i 's/:80/:${PORT}/' /etc/apache2/sites-available/000-default.conf
+
 COPY . /var/www/html
 
 RUN mkdir -p var vendor public \

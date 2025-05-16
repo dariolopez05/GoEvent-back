@@ -1,4 +1,4 @@
-FROM php:8.1-fpm
+FROM php:8.2-fpm
 
 RUN apt-get update && apt-get install -y nginx supervisor unzip git zip libicu-dev libzip-dev libonig-dev libpng-dev libjpeg-dev libfreetype6-dev \
     && docker-php-ext-configure intl \

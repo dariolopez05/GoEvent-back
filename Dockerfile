@@ -24,4 +24,6 @@ RUN a2enmod rewrite
 
 EXPOSE 80
 
-CMD ["apache2-foreground"]
+RUN ls -l /var/www/html/public && ls -l /var/www/html/var && ls -l /var/www/html/vendor
+
+CMD ["tail", "-f", "/var/log/apache2/error.log"]

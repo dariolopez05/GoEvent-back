@@ -23,4 +23,5 @@ RUN php bin/console cache:warmup --env=prod || true
 
 EXPOSE 8000
 
-CMD ["php", "-d", "display_errors=1", "-d", "error_reporting=E_ALL", "-S", "0.0.0.0:8000", "-t", "public"]
+CMD ["sh", "-c", "php -d display_errors=1 -d error_reporting=E_ALL -S 0.0.0.0:${PORT:-8000} -t public"]
+

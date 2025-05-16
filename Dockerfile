@@ -1,21 +1,23 @@
 FROM php:8.3-apache
 
-WORKDIR /var/www/html
-
 RUN apt-get update && apt-get install -y \
-    nano zip unzip git curl libicu-dev libzip-dev libpq-dev \
+    unzip git curl libicu-dev libzip-dev libpq-dev \
     && docker-php-ext-install intl pdo pdo_mysql opcache \
     && a2enmod rewrite
 
-RUN curl -sS https://getcomposer.org/installer | php \
-    && mv composer.phar /usr/local/bin/composer
+WORKDIR /var/www/html
 
-COPY . /var/www/html/
+COPY . /var/www/html
 
-RUN if [ -d /var/www/html/var ]; then chown -R www-data:www-data /var/www/html/var; fi
-RUN if [ -d /var/www/html/vendor ]; then chown -R www-data:www-data /var/www/html/vendor; fi
+# Instala composer y dependencias
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
 
+# Cambiar permisos (si es necesario)
+RUN chown -R www-data:www-data /var/www/html/var /var/www/html/vendor
+
+# Cambiar document root de Apache a /var/www/html/public
 RUN sed -i 's|/var/www/html|/var/www/html/public|g' /etc/apache2/sites-available/000-default.conf
 
 EXPOSE 80

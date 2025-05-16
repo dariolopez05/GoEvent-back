@@ -1,32 +1,24 @@
-FROM php:8.2-apache
+FROM php:8.1-cli
 
-ENV COMPOSER_MEMORY_LIMIT=-1
-ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
+WORKDIR /app
 
-RUN apt-get update && apt-get install -y \
-    git unzip libicu-dev libzip-dev libonig-dev libpng-dev libjpeg-dev libfreetype6-dev libxml2-dev \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    unzip git zip libicu-dev libzip-dev libonig-dev default-mysql-client \
     && docker-php-ext-configure intl \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install intl pdo pdo_mysql zip gd mbstring opcache xml \
+    && docker-php-ext-install -j$(nproc) intl pdo pdo_mysql zip mbstring \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN a2enmod rewrite
-
-RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
-RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
-
-COPY . /var/www/html
-
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+COPY . .
+
+RUN rm -rf var/cache/*
 
 RUN composer install --no-dev --optimize-autoloader --no-interaction -vvv
 
 RUN php bin/console cache:clear --env=prod --no-warmup
 RUN php bin/console cache:warmup --env=prod
 
+EXPOSE 8000
 
-RUN chown -R www-data:www-data /var/www/html/var /var/www/html/vendor /var/www/html/public
-
-EXPOSE 80
-
-CMD ["apache2-foreground"]
+CMD ["php", "-d", "display_errors=1", "-d", "error_reporting=E_ALL", "-S", "0.0.0.0:8000", "-t", "public"]

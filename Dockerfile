@@ -29,7 +29,7 @@ RUN rm /etc/nginx/sites-enabled/default
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Permisos correctos
-RUN chown -R www-data:www-data /var/www/html/var /var/www/html/vendor
+RUN chown -R www-data:www-data /var/www/html || true
 
 # Variables de entorno PHP
 ENV PHP_OPCACHE_VALIDATE_TIMESTAMPS=0

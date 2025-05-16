@@ -13,7 +13,8 @@ WORKDIR /var/www/html
 COPY composer.json composer.lock ./
 
 # Instalamos dependencias con composer con más verbosidad para debug
-RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --verbose --no-progress --no-scripts
+RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+
 
 # Ahora copiamos el resto del código
 COPY . .

@@ -24,8 +24,10 @@ RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
 RUN composer install --no-dev --optimize-autoloader
 
 # Da permisos a var y vendor para Apache (www-data)
-RUN chown -R www-data:www-data var vendor public \
-    && chmod -R 775 var vendor public
+RUN if [ -d var ]; then chown -R www-data:www-data var && chmod -R 775 var; fi \
+ && if [ -d vendor ]; then chown -R www-data:www-data vendor && chmod -R 775 vendor; fi \
+ && if [ -d public ]; then chown -R www-data:www-data public && chmod -R 775 public; fi
+
 
 # Limpia cache Symfony para producción
 RUN php bin/console cache:clear --env=prod --no-debug

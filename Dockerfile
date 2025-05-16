@@ -1,48 +1,29 @@
-# PHP-FPM image (8.2)
-FROM php:8.2-fpm-alpine AS app
+FROM php:8.3-apache
 
-# Install system dependencies
-RUN apk add --no-cache \
-    bash \
-    git \
-    icu-dev \
-    libxml2-dev \
-    oniguruma-dev \
-    zlib-dev \
-    libpng-dev \
-    libjpeg-turbo-dev \
-    freetype-dev \
-    libzip-dev \
-    postgresql-dev \
-    && docker-php-ext-install intl pdo pdo_pgsql opcache xml zip
+# Establece el directorio de trabajo
+WORKDIR /var/www/html
 
-# Install Composer
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+# Instala dependencias
+RUN apt-get update && apt-get install -y \
+    nano zip unzip git curl libicu-dev libzip-dev libpq-dev \
+    && docker-php-ext-install intl pdo pdo_mysql opcache \
+    && a2enmod rewrite
 
-# Set working directory
-WORKDIR /var/www
+# Instala Composer
+RUN curl -sS https://getcomposer.org/installer | php \
+    && mv composer.phar /usr/local/bin/composer
 
-# Copy app files
-COPY . .
+# Copia los archivos del proyecto
+COPY . /var/www/html/
 
-# Install PHP dependencies (production)
-RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --verbose
+# Corrige permisos
+RUN chown -R www-data:www-data /var/www/html/var /var/www/html/vendor
 
-# NGINX image (as webserver)
-FROM nginx:stable-alpine AS webserver
+# Establece el DocumentRoot para Symfony (usualmente en /public)
+RUN sed -i 's|/var/www/html|/var/www/html/public|g' /etc/apache2/sites-available/000-default.conf
 
-# Copy NGINX config template
-COPY docker/nginx.conf.template /etc/nginx/nginx.conf.template
+# Expone el puerto 80 (Apache)
+EXPOSE 80
 
-# Generate final nginx.conf with PORT from env (default to 8080 if not set)
-RUN export PORT=${PORT:-8080} && \
-    envsubst '$PORT' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
-
-# Copy built PHP app to NGINX container
-COPY --from=app /var/www /var/www
-
-# Expose port (default 8080, but can be overwritten by Railway)
-EXPOSE 8080
-
-# Start NGINX in foreground
-CMD ["nginx", "-g", "daemon off;"]
+# Comando por defecto (apache en modo foreground)
+CMD ["apache2-foreground"]

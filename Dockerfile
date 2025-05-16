@@ -12,13 +12,13 @@ RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
     && curl -1sLf 'https://dl.cloudsmith.io/public/symfony/stable/setup.deb.sh' | bash \
     && apt-get -y install symfony-cli
 
-# Cambiar el puerto de escucha de Apache al puerto que Railway define (por defecto 80 si no existe PORT)
+# Cambiar puerto de escucha Apache según variable PORT de Railway, default 80
 ARG PORT=80
 
 RUN sed -i "s/Listen 80/Listen ${PORT}/" /etc/apache2/ports.conf \
     && sed -i "s/<VirtualHost \*:80>/<VirtualHost *:${PORT}>/" /etc/apache2/sites-available/000-default.conf
 
-# Añadir ServerName para eliminar warning
+# Evitar warning de ServerName
 RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
 COPY . /var/www/html

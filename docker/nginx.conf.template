@@ -1,6 +1,9 @@
 server {
-    listen {{PORT}};
-    root /var/www/html/public;
+    listen ${PORT} default_server;
+    server_name _;
+
+    root /var/www/public;
+
     index index.php index.html;
 
     location / {
@@ -8,8 +11,9 @@ server {
     }
 
     location ~ \.php$ {
-        include fastcgi_params;
         fastcgi_pass 127.0.0.1:9000;
+        fastcgi_index index.php;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include fastcgi_params;
     }
 }

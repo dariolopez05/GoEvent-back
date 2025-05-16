@@ -14,7 +14,7 @@ COPY . .
 
 RUN rm -rf var/cache/*
 
-RUN composer install --no-dev --optimize-autoloader --no-interaction -vvv
+RUN composer install -vvv
 
 RUN php bin/console cache:clear --env=prod --no-warmup
 RUN php bin/console cache:warmup --env=prod

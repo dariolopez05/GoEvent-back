@@ -16,6 +16,9 @@ RUN echo '<Directory /var/www/html/public>\nAllowOverride All\n</Directory>' >> 
 
 RUN a2enmod rewrite
 
+# Establecer un ServerName genérico
+RUN echo 'ServerName localhost' >> /etc/apache2/apache2.conf
+
 COPY . /var/www/html
 
 RUN mkdir -p var vendor public \

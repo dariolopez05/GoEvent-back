@@ -1,29 +1,37 @@
 FROM php:8.3-apache
 
-WORKDIR /var/www/html
+# Instala dependencias necesarias y extensiones PHP
+RUN apt-get update && apt-get install -y \
+    libzip-dev zip unzip git curl nano \
+    && docker-php-ext-install pdo pdo_mysql zip mysqli \
+    && a2enmod rewrite
 
-RUN apt-get update && apt-get -y install apt-utils nano zip unzip git curl \
-    && docker-php-ext-install mysqli pdo pdo_mysql
-
-RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
-    && php composer-setup.php \
-    && php -r "unlink('composer-setup.php');" \
-    && mv composer.phar /usr/local/bin/composer \
-    && curl -1sLf 'https://dl.cloudsmith.io/public/symfony/stable/setup.deb.sh' | bash \
-    && apt-get -y install symfony-cli
-
+# Configura DocumentRoot para Symfony (carpeta public)
 RUN sed -i 's|/var/www/html|/var/www/html/public|g' /etc/apache2/sites-available/000-default.conf
 
-COPY . /var/www/html
+# Establece directorio de trabajo
+WORKDIR /var/www/html
 
-RUN mkdir -p /var/www/html/var /var/www/html/vendor \
-    && chown -R www-data:www-data /var/www/html/var /var/www/html/vendor \
-    || true
+# Copia archivos de la app (asumiendo que el Dockerfile está en la raíz del proyecto)
+COPY . .
 
-RUN a2enmod rewrite
+# Instala Composer (si lo necesitas para dependencias, opcional si ya instalaste antes)
+RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
+    && php composer-setup.php --install-dir=/usr/local/bin --filename=composer \
+    && php -r "unlink('composer-setup.php');"
 
+# Instala dependencias PHP sin paquetes de desarrollo y optimiza autoload
+RUN composer install --no-dev --optimize-autoloader
+
+# Da permisos a var y vendor para Apache (www-data)
+RUN chown -R www-data:www-data var vendor public \
+    && chmod -R 775 var vendor public
+
+# Limpia cache Symfony para producción
+RUN php bin/console cache:clear --env=prod --no-debug
+
+# Expone puerto 80 para Railway
 EXPOSE 80
 
-RUN ls -l /var/www/html/public && ls -l /var/www/html/var && ls -l /var/www/html/vendor
-
-CMD ["tail", "-f", "/var/log/apache2/error.log"]
+# Comando para arrancar Apache en primer plano
+CMD ["apache2-foreground"]

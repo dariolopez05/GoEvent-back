@@ -8,12 +8,9 @@ RUN apt-get update && apt-get install -y nginx supervisor unzip git zip libicu-d
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
-
-COPY composer.json composer.lock ./
+COPY . .
 
 RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --verbose
-
-COPY . .
 
 COPY docker/nginx.conf.template /etc/nginx/nginx.conf.template
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf

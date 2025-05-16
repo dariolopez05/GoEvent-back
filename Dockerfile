@@ -21,6 +21,10 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 RUN composer install --no-dev --optimize-autoloader --no-interaction -vvv
 
+RUN php bin/console cache:clear --env=prod --no-warmup
+RUN php bin/console cache:warmup --env=prod
+
+
 RUN chown -R www-data:www-data /var/www/html/var /var/www/html/vendor /var/www/html/public
 
 EXPOSE 80

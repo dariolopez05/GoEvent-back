@@ -4,6 +4,8 @@ set -e
 echo "Valor de DATABASE_URL: $DATABASE_URL"
 echo "Usando puerto: $PORT"
 
+PORT=${PORT:-9000}  # Si $PORT no está definido, usa 9000
+
 echo "Esperando base de datos..."
 
 until php test-db.php | grep -q "OK"; do

@@ -11,7 +11,7 @@ until php test-db.php | grep -q "OK"; do
 done
 
 echo "Ejecutando migraciones..."
-php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
+APP_ENV=prod php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
 
 echo "Iniciando servidor..."
-php -S 0.0.0.0:${PORT} -t public
+APP_ENV=prod php -S 0.0.0.0:${PORT} -t public

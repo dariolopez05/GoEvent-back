@@ -2,6 +2,7 @@
 set -e
 
 echo "Valor de DATABASE_URL: $DATABASE_URL"
+echo "Usando puerto: $PORT"
 
 echo "Esperando base de datos..."
 

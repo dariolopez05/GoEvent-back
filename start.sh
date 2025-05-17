@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+echo "Valor de DATABASE_URL: $DATABASE_URL"
+
 echo "Esperando base de datos..."
 until php bin/console doctrine:query:sql "SELECT 1" > /dev/null 2>&1; do
   echo "Base de datos no disponible, esperando 5 segundos..."

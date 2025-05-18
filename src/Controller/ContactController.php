@@ -35,8 +35,8 @@ final class ContactController extends AbstractController
 
         $emailMessage = (new Email())
             ->from('goeventmail@gmail.com') 
+            ->to('goeventmail@gmail.com')   
             ->replyTo($email)               
-            ->to('goeventmail@gmail.com')
             ->subject('Nuevo mensaje desde formulario de contacto')
             ->html(
                 "<p><strong>Nombre:</strong> $name</p>" .

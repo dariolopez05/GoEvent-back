@@ -49,7 +49,10 @@ final class ContactController extends AbstractController
             $mailer->send($emailMessage);
             return new JsonResponse(['message' => 'Email enviado correctamente']);
         } catch (\Exception $e) {
-            return new JsonResponse(['error' => 'Error al enviar email'], 500);
+            return new JsonResponse([
+                'error' => 'Error al enviar email',
+                'details' => $e->getMessage()
+            ], 500);
         }
     }
 }

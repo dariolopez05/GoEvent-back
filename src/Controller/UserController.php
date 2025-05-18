@@ -9,6 +9,8 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 
 final class UserController extends AbstractController
 {
@@ -58,7 +60,6 @@ final class UserController extends AbstractController
         $userId = $data['userId'] ?? null;
         $eventIds = $data['eventIds'] ?? [];
 
-        // Verificación: Asegurarse de que eventIds sea un array
         if (!is_array($eventIds)) {
             return new JsonResponse(['error' => 'Favoritos no válidos.'], Response::HTTP_BAD_REQUEST);
         }
@@ -67,15 +68,13 @@ final class UserController extends AbstractController
             return new JsonResponse(['error' => 'Datos inválidos.'], Response::HTTP_BAD_REQUEST);
         }
 
-        // Buscar al usuario por ID
         $user = $entityManager->getRepository(User::class)->find($userId);
 
         if (!$user) {
             return new JsonResponse(['error' => 'Usuario no encontrado.'], Response::HTTP_NOT_FOUND);
         }
 
-        // Establecer los favoritos del usuario
-        $user->setFavorites($eventIds);  // Asignar el array de favoritos actualizado
+        $user->setFavorites($eventIds);  
 
         $entityManager->persist($user);
         $entityManager->flush();
@@ -83,6 +82,46 @@ final class UserController extends AbstractController
         return new JsonResponse(['message' => 'Favoritos actualizados correctamente.', 'favorites' => $eventIds]);
     }
 
+    #[Route('/register', name: 'user_register', methods: ['POST'])]
+public function register(
+    Request $request,
+    EntityManagerInterface $entityManager,
+    UserPasswordHasherInterface $passwordHasher
+): JsonResponse {
+    $data = json_decode($request->getContent(), true);
+
+    $email = $data['email'] ?? null;
+    $password = $data['password'] ?? null;
+    $username = $data['username'] ?? null;
+    $city = $data['city'] ?? null;
+
+    if (!$email || !$password || !$username || !$city) {
+        return new JsonResponse(['error' => 'Todos los campos son obligatorios.'], Response::HTTP_BAD_REQUEST);
+    }
+
+    // Comprobar si ya existe un usuario con ese email
+    $existingUser = $entityManager->getRepository(User::class)->findOneBy(['email' => $email]);
+    if ($existingUser) {
+        return new JsonResponse(['error' => 'El correo ya está registrado.'], Response::HTTP_CONFLICT);
+    }
+
+    $user = new User();
+    $user->setEmail($email);
+    $user->setUsername($username);
+    $user->setCity($city);
+
+    $hashedPassword = $passwordHasher->hashPassword($user, $password);
+    $user->setPassword($hashedPassword);
+
+    try {
+        $entityManager->persist($user);
+        $entityManager->flush();
+    } catch (\Exception $e) {
+        return new JsonResponse(['error' => 'Error al registrar el usuario.'], Response::HTTP_INTERNAL_SERVER_ERROR);
+    }
+
+    return new JsonResponse(['message' => 'Usuario registrado con éxito.'], Response::HTTP_CREATED);
+}
 
 }
 

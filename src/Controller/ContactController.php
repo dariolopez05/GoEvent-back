@@ -12,10 +12,9 @@ use Symfony\Component\Routing\Annotation\Route;
 final class ContactController extends AbstractController
 {
     #[Route('/api/contact', name: 'api_contact', methods: ['POST'])]
-    public function sendEmail(Request $request, MailerInterface $mailer): JsonResponse
+    public function sendEmail(Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
-
         $name = $data['name'] ?? '';
         $email = $data['email'] ?? '';
         $phone = $data['phone'] ?? '';
@@ -25,24 +24,33 @@ final class ContactController extends AbstractController
             return new JsonResponse(['error' => 'Datos incompletos'], 400);
         }
 
-        $emailMessage = (new Email())
-            ->from('goeventmail@gmail.com')       
-            ->to('goeventmail@gmail.com')          
-            ->replyTo($email)                       
-            ->subject('Nuevo mensaje desde formulario de contacto')
-            ->html(
-                "<p><strong>Nombre:</strong> ".htmlspecialchars($name)."</p>".
-                "<p><strong>Email:</strong> ".htmlspecialchars($email)."</p>".
-                "<p><strong>Teléfono:</strong> ".htmlspecialchars($phone)."</p>".
-                "<p><strong>Mensaje:</strong><br/>".nl2br(htmlspecialchars($messageContent))."</p>"
-            );
+        $mail = new PHPMailer(true);
 
         try {
-            $mailer->send($emailMessage);
+            $mail->isSMTP();
+            $mail->Host = 'smtp.gmail.com';            
+            $mail->SMTPAuth = true;
+            $mail->Username = 'goeventmail@gmail.com';     
+            $mail->Password = 'ozzuatpotimupukq';        
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port = 587;
+
+            //Recipients
+            $mail->setFrom($email, $name);
+            $mail->addAddress('goeventmail@gmail.com');
+
+            // Content
+            $mail->isHTML(true);
+            $mail->Subject = 'Nuevo mensaje desde formulario de contacto';
+            $mail->Body    = "<p><strong>Nombre:</strong> $name</p>
+                              <p><strong>Email:</strong> $email</p>
+                              <p><strong>Teléfono:</strong> $phone</p>
+                              <p><strong>Mensaje:</strong><br/>$messageContent</p>";
+
+            $mail->send();
             return new JsonResponse(['message' => 'Email enviado correctamente']);
-        } catch (\Exception $e) {
-            error_log('Error al enviar email: ' . $e->getMessage());
-            return new JsonResponse(['error' => 'Error al enviar email'], 500);
+        } catch (Exception $e) {
+            return new JsonResponse(['error' => "No se pudo enviar el mensaje. Mailer Error: {$mail->ErrorInfo}"], 500);
         }
     }
 }

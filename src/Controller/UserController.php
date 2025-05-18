@@ -82,46 +82,39 @@ final class UserController extends AbstractController
         return new JsonResponse(['message' => 'Favoritos actualizados correctamente.', 'favorites' => $eventIds]);
     }
 
-    #[Route('/register', name: 'user_register', methods: ['POST'])]
-public function register(
-    Request $request,
-    EntityManagerInterface $entityManager,
-    UserPasswordHasherInterface $passwordHasher
-): JsonResponse {
-    $data = json_decode($request->getContent(), true);
+   #[Route('/register', name: 'user_register', methods: ['POST'])]
+    public function register(Request $request, EntityManagerInterface $entityManager): JsonResponse
+    {
+        try {
+            $data = json_decode($request->getContent(), true);
 
-    $email = $data['email'] ?? null;
-    $password = $data['password'] ?? null;
-    $username = $data['username'] ?? null;
-    $city = $data['city'] ?? null;
+            if (!isset($data['email'], $data['username'], $data['password'], $data['city'])) {
+                return new JsonResponse(['error' => 'Faltan campos obligatorios'], 400);
+            }
 
-    if (!$email || !$password || !$username || !$city) {
-        return new JsonResponse(['error' => 'Todos los campos son obligatorios.'], Response::HTTP_BAD_REQUEST);
+            $email = $data['email'];
+
+            $existingUser = $entityManager->getRepository(User::class)->findOneBy(['email' => $email]);
+            if ($existingUser) {
+                return new JsonResponse(['error' => 'Este correo ya está registrado.'], 400);
+            }
+
+            $user = new User();
+            $user->setEmail($email);
+            $user->setUsername($data['username']);
+            $user->setPassword(password_hash($data['password'], PASSWORD_BCRYPT));
+            $user->setCity($data['city']);
+            $user->setFavorites([]);
+
+            $entityManager->persist($user);
+            $entityManager->flush();
+
+            return new JsonResponse(['message' => 'Usuario registrado correctamente']);
+        } catch (\Throwable $e) {
+            return new JsonResponse(['error' => 'Error del servidor: ' . $e->getMessage()], 500);
+        }
     }
 
-    // Comprobar si ya existe un usuario con ese email
-    $existingUser = $entityManager->getRepository(User::class)->findOneBy(['email' => $email]);
-    if ($existingUser) {
-        return new JsonResponse(['error' => 'El correo ya está registrado.'], Response::HTTP_CONFLICT);
-    }
-
-    $user = new User();
-    $user->setEmail($email);
-    $user->setUsername($username);
-    $user->setCity($city);
-
-    $hashedPassword = $passwordHasher->hashPassword($user, $password);
-    $user->setPassword($hashedPassword);
-
-    try {
-        $entityManager->persist($user);
-        $entityManager->flush();
-    } catch (\Exception $e) {
-        return new JsonResponse(['error' => 'Error al registrar el usuario.'], Response::HTTP_INTERNAL_SERVER_ERROR);
-    }
-
-    return new JsonResponse(['message' => 'Usuario registrado con éxito.'], Response::HTTP_CREATED);
-}
 
 }
 

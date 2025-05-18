@@ -11,14 +11,6 @@ use Symfony\Component\Routing\Annotation\Route;
 
 final class ContactController extends AbstractController
 {
-    #[Route('/contact', name: 'app_contact')]
-    public function index(): Response
-    {
-        return $this->render('contact/index.html.twig', [
-            'controller_name' => 'ContactController',
-        ]);
-    }
-
     #[Route('/api/contact', name: 'api_contact', methods: ['POST'])]
     public function sendEmail(Request $request, MailerInterface $mailer): JsonResponse
     {
@@ -34,25 +26,23 @@ final class ContactController extends AbstractController
         }
 
         $emailMessage = (new Email())
-            ->from('goeventmail@gmail.com') 
-            ->to('goeventmail@gmail.com')   
-            ->replyTo($email)               
+            ->from('goeventmail@gmail.com')       
+            ->to('goeventmail@gmail.com')          
+            ->replyTo($email)                       
             ->subject('Nuevo mensaje desde formulario de contacto')
             ->html(
-                "<p><strong>Nombre:</strong> $name</p>" .
-                "<p><strong>Email:</strong> $email</p>" .
-                "<p><strong>Teléfono:</strong> $phone</p>" .
-                "<p><strong>Mensaje:</strong><br/>$messageContent</p>"
+                "<p><strong>Nombre:</strong> ".htmlspecialchars($name)."</p>".
+                "<p><strong>Email:</strong> ".htmlspecialchars($email)."</p>".
+                "<p><strong>Teléfono:</strong> ".htmlspecialchars($phone)."</p>".
+                "<p><strong>Mensaje:</strong><br/>".nl2br(htmlspecialchars($messageContent))."</p>"
             );
 
         try {
             $mailer->send($emailMessage);
             return new JsonResponse(['message' => 'Email enviado correctamente']);
         } catch (\Exception $e) {
-            return new JsonResponse([
-                'error' => 'Error al enviar email',
-                'details' => $e->getMessage()
-            ], 500);
+            error_log('Error al enviar email: ' . $e->getMessage());
+            return new JsonResponse(['error' => 'Error al enviar email'], 500);
         }
     }
 }

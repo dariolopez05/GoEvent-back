@@ -102,7 +102,7 @@ final class UserController extends AbstractController
             $user = new User();
             $user->setEmail($email);
             $user->setUsername($data['username']);
-            $user->setPassword(password_hash($data['password'], PASSWORD_BCRYPT));
+            $user->setPassword($data['password']);
             $user->setCity($data['city']);
             $user->setFavorites([]);
 

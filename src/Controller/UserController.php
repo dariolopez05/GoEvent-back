@@ -135,7 +135,6 @@ final class UserController extends AbstractController
             return new JsonResponse(['error' => 'Usuario no encontrado.'], 404);
         }
 
-        // Verificar si el nuevo email ya está registrado por otro usuario
         $existingUser = $entityManager->getRepository(User::class)->findOneBy(['email' => $newEmail]);
         if ($existingUser && $existingUser->getId() !== $user->getId()) {
             return new JsonResponse(['error' => 'El correo ya está en uso.'], 400);

@@ -115,6 +115,49 @@ final class UserController extends AbstractController
         }
     }
 
+    #[Route('/user/update', name: 'user_update', methods: ['PUT'])]
+    public function updateUser(Request $request, EntityManagerInterface $entityManager): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+
+        $userId = $data['id'] ?? null;
+        $newEmail = $data['email'] ?? null;
+        $newUsername = $data['username'] ?? null;
+        $newCity = $data['city'] ?? null;
+
+        if (!$userId || !$newEmail || !$newUsername || !$newCity) {
+            return new JsonResponse(['error' => 'Faltan campos obligatorios.'], 400);
+        }
+
+        $user = $entityManager->getRepository(User::class)->find($userId);
+
+        if (!$user) {
+            return new JsonResponse(['error' => 'Usuario no encontrado.'], 404);
+        }
+
+        // Verificar si el nuevo email ya está registrado por otro usuario
+        $existingUser = $entityManager->getRepository(User::class)->findOneBy(['email' => $newEmail]);
+        if ($existingUser && $existingUser->getId() !== $user->getId()) {
+            return new JsonResponse(['error' => 'El correo ya está en uso.'], 400);
+        }
+
+        $user->setEmail($newEmail);
+        $user->setUsername($newUsername);
+        $user->setCity($newCity);
+
+        $entityManager->persist($user);
+        $entityManager->flush();
+
+        return new JsonResponse([
+            'message' => 'Usuario actualizado correctamente.',
+            'user' => [
+                'id' => $user->getId(),
+                'email' => $user->getEmail(),
+                'username' => $user->getUsername(),
+                'city' => $user->getCity(),
+            ]
+        ]);
+    }
 
 }
 

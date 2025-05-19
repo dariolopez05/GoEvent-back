@@ -37,11 +37,9 @@ final class ContactController extends AbstractController
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
             $mail->Port = 587;
 
-            //Recipients
             $mail->setFrom($email, $name);
             $mail->addAddress('goeventmail@gmail.com');
 
-            // Content
             $mail->isHTML(true);
             $mail->Subject = 'Nuevo mensaje desde formulario de contacto';
             $mail->Body    = "<p><strong>Nombre:</strong> $name</p>

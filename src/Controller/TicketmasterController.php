@@ -9,17 +9,19 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Psr\Log\LoggerInterface;
+use Symfony\Contracts\Cache\CacheInterface;
+use Symfony\Contracts\Cache\ItemInterface;
 
 final class TicketmasterController extends AbstractController
 {
     private HttpClientInterface $httpClient;
+    private CacheInterface $cache;
     private string $apiKey;
-    private LoggerInterface $logger;
 
-    public function __construct(HttpClientInterface $httpClient, LoggerInterface $logger)
+    public function __construct(HttpClientInterface $httpClient, CacheInterface $cache)
     {
         $this->httpClient = $httpClient;
-        $this->logger = $logger;
+        $this->cache = $cache;
         $this->apiKey = $_ENV['TICKETMASTER_API_KEY'] ?? '';
     }
 
@@ -27,12 +29,15 @@ final class TicketmasterController extends AbstractController
     public function getById(Request $request): JsonResponse
     {
         $id = $request->query->get('id');
-
         if (!$id) {
             return $this->json(['error' => 'ID requerido'], 400);
         }
 
-        try {
+        $cacheKey = 'ticketmaster_event_' . md5($id);
+
+        $data = $this->cache->get($cacheKey, function (ItemInterface $item) use ($id) {
+            $item->expiresAfter(600);
+
             $response = $this->httpClient->request('GET', 'https://app.ticketmaster.com/discovery/v2/events', [
                 'query' => [
                     'countryCode' => 'ES',
@@ -41,28 +46,13 @@ final class TicketmasterController extends AbstractController
                 ],
             ]);
 
-            $data = $response->toArray(false);
-            $statusCode = $response->getStatusCode();
-
-            if ($statusCode >= 400) {
-                return $this->json([
-                    'error' => 'Error desde Ticketmaster',
-                    'codigo_http' => $statusCode,
-                    'detalle' => $data,
-                ], $statusCode);
+            if ($response->getStatusCode() >= 400) {
+                throw new \RuntimeException('Error desde Ticketmaster: ' . $response->getStatusCode());
             }
 
-            return $this->json($data);
-        } catch (\Throwable $e) {
-            $this->logger->error('Error al consultar Ticketmaster', [
-                'exception' => $e,
-                'id' => $id,
-            ]);
+            return $response->toArray();
+        });
 
-            return $this->json([
-                'error' => 'Error inesperado al contactar con Ticketmaster',
-                'detalle' => $e->getMessage(),
-            ], 500);
-        }
+        return $this->json($data);
     }
 }

@@ -8,22 +8,26 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Psr\Log\LoggerInterface;
 
 final class TicketmasterController extends AbstractController
 {
     private HttpClientInterface $httpClient;
     private string $apiKey;
+    private LoggerInterface $logger;
 
-    public function __construct(HttpClientInterface $httpClient)
+    public function __construct(HttpClientInterface $httpClient, LoggerInterface $logger)
     {
         $this->httpClient = $httpClient;
-        $this->apiKey = $_ENV['TICKETMASTER_API_KEY']; 
+        $this->logger = $logger;
+        $this->apiKey = $_ENV['TICKETMASTER_API_KEY'] ?? '';
     }
 
     #[Route('/api/ticketmaster/id', name: 'ticketmaster_by_id', methods: ['GET'])]
     public function getById(Request $request): JsonResponse
     {
         $id = $request->query->get('id');
+
         if (!$id) {
             return $this->json(['error' => 'ID requerido'], 400);
         }
@@ -37,9 +41,28 @@ final class TicketmasterController extends AbstractController
                 ],
             ]);
 
-            return $this->json($response->toArray());
-        } catch (\Exception $e) {
-            return $this->json(['error' => $e->getMessage()], 500);
+            $data = $response->toArray(false);
+            $statusCode = $response->getStatusCode();
+
+            if ($statusCode >= 400) {
+                return $this->json([
+                    'error' => 'Error desde Ticketmaster',
+                    'codigo_http' => $statusCode,
+                    'detalle' => $data,
+                ], $statusCode);
+            }
+
+            return $this->json($data);
+        } catch (\Throwable $e) {
+            $this->logger->error('Error al consultar Ticketmaster', [
+                'exception' => $e,
+                'id' => $id,
+            ]);
+
+            return $this->json([
+                'error' => 'Error inesperado al contactar con Ticketmaster',
+                'detalle' => $e->getMessage(),
+            ], 500);
         }
     }
 }

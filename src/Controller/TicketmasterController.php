@@ -5,9 +5,21 @@ namespace App\Controller;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Symfony\Component\HttpFoundation\JsonResponse;
 
 final class TicketmasterController extends AbstractController
 {
+    private HttpClientInterface $httpClient;
+    private string $apiKey;
+
+    public function __construct(HttpClientInterface $httpClient)
+    {
+        $this->httpClient = $httpClient;
+        $this->apiKey = $_ENV['TICKETMASTER_API_KEY']; 
+    }
+
     #[Route('/api/ticketmaster/id', name: 'ticketmaster_by_id', methods: ['GET'])]
     public function getById(Request $request): JsonResponse
     {
